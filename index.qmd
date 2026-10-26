@@ -1,0 +1,819 @@
+---
+title: "rentership ~ occupation, analysis"
+author: "Prateek"
+date: "2025-11-30"
+bibliography: references.bib
+categories: [random effects, hierarchical models, glm, binomial]
+image: "rentals_2021.png"
+toc: true
+execute:
+  echo: false
+  warning: false
+abstract:
+    Using 2021 ONS Census data for neighbourhoods across the UK (MSOAs), this
+    article examines how occupation and age relate to private renting. We link
+    housing tenure for the household reference person to occupation and add local
+    authority and neighbourhood information to capture location-specific patterns.
+    We fit binomial models that account for age mix and hierarchical geography,
+    using a balanced sample across local authorities and MSOAs and excluding London.
+    Higher‑skilled groups rent less, professionals are ~55% less likely
+    to rent than elementary occupations; rentership is highest among 25–34 year olds.
+    Including local authority and MSOA random effects improves model fit and reveals
+    spatial heterogeneity, with town centres renting more than suburbs. Limitations
+    include age‑by‑occupation counts for all workers (not HRPs), cross‑sectional data,
+    and non‑London focus. Results describe associations, indicating rental demand is
+    shaped by occupational structure, age composition, and local context.
+
+---
+
+```{r}
+#| warning: false
+readRenviron(file.path(here::here(), ".local_credentials"))
+
+renv::load(here::here())
+library(tidyverse)
+library(lme4)
+library(faraway)
+library(DBI)
+library(duckdb)
+library(RAthena)
+library(tidymodels)
+library(patchwork)
+library(sf)
+library(leaflet)
+library(RColorBrewer)
+library(ggspatial)
+
+data_dir <- file.path(here::here(), "data")
+
+con <- dbConnect(
+  drv = duckdb(),
+  dbdir = file.path(data_dir, "lab.duckdb"),
+  read_only = TRUE
+)
+
+acon <- dbConnect(
+  athena(),
+  workgroup = "primary",
+  schema_name = "default",
+  s3_staging_dir = "s3://aws-athena-query-results-434616802091-eu-west-1",
+  profile_name = "personal",
+  region = "eu-west-1",
+)
+athena_sql <- function(query) {
+  tibble(dbGetQuery(acon, query))
+}
+
+sql <- function(query) {
+  tibble(dbGetQuery(con, query))
+}
+
+theme_set(theme_minimal())
+
+```
+
+## Introduction
+
+Private renting has expanded across the UK, yet the propensity to rent varies widely across occupations and life stages. This study quantifies how occupation and age relate to private rentership using 2021 ONS Census cross‑tabulations at the MSOA (neighbourhood‑scale) level. Housing tenure for household reference persons is linked to occupational categories and augmented with local authority identifiers to capture geographic context.
+
+The analysis addresses three questions: <br/>
+
+* Do higher‑skilled occupations rent less than lower‑skilled groups after accounting for age composition?
+* How does rentership vary across life stages (age) ?
+* To what extent do local authorities and neighbourhoods moderate these relationships?
+
+The study is descriptive and subject to measurement constraints: age composition is observed for all workers rather than HRPs, and the focus is on full‑time employment. Despite these limitations, the findings provide a transparent baseline on how occupational structure and local context shape rental demand and motivate future work with richer microdata and dynamic market indicators.
+
+## Data
+
+We use 2021 ONS Census data (via the Nomis API) that cross‑tabulates housing tenure and occupation at the MSOA level [@ONS2021RM140]. <br/>
+MSOAs (Middle Layer Super Output Areas) are neighborhood‑sized geographies. Counts refer to the household reference person (HRP) the person who represents the household, so each household is linked to a single occupation. <br/>
+These are different from the counts of all workers (used in occupation‑by‑age data introduced later in the study), because a household can contain more than one person in full‑time work but only one HRP. <br/>
+
+```{r}
+sql(
+  "select *
+from msoa_tenure_occupation
+order by random()
+limit 10"
+) %>%
+  head() %>%
+  knitr::kable()
+
+```
+
+### Additional information
+
+Local authority for each MSOA in original dataset is added, to account for rental patterns that may be present at local area levels. Being in the same Local authority may affect neighbouring MSOAs introducing correlations in their data. <br/>
+
+
+It may be the case that age has a confounding effect on Rentership via Occupation. *Professional and Managers* may likely be older than for e.g. *Associates* and this may mean that they were able to purchase a house earlier in their careers/life and now represent a smaller proportion of rental cohort. <br/>
+Adjusting for age gives an apples-to-apples comparison of rentership preference among people pursuing different occupations but are in boradly same phases of their life. <br/>
+The adjustment can be made (ideally) by including the counts of full-time employed HRPs in an MSOA engaged in a particular profession.
+
+We have cross tabulated data [@ONS2021RM102] for counts of *usual residents aged 16 years and over in employment the week before the census* per occupation, falling in one of the following age bands: <br/>
+
+* aged 15 years and under
+* aged 16 to 24 years
+* aged 25 to 34 years
+* aged 35 to 49 years
+* aged 50 to 64 years
+* aged 65 years and over
+
+**Note:** <br/>
+Using this data gives an inexact adjustment since this data is available for *all residents aged 16 years and over in employment* rather than just *HRP* (which is the unit of measurement in tenure data). This means that an HRP could be a singular older person, whereas the counts in age dataset include other members of the household which are possibly younger, creating a slight disconnect between the 2 datasets. <br/>
+It is neverthless instructive to use this data as the downsides due to excluding this information outweigh downsided due to (incorrectly) including it.
+
+Since, the interest lies in proportion of rentership for each occupation, per occupation totals for each MSOA are added to the dataset, setting us up for a Binomial counts of Success-Failures type of model. <br/>
+
+### Filter
+
+Current data only includes measurements from household reference persons (HRP) in full time employment a week before census. <br/>
+London is also filtered out as it is a very different rental market compared to the rest of UK and may skew results when mixed with other regions. <br/>
+
+**Note:** <br/>
+
+* ONS rental tenure data includes a large proportion (~34%) of people not under full time employment[@EHS_21-22_PRS_Ch_1_Annex_Tables] (filtered out in current analysis)
+    * part-time work (~11% includes furloughed)
+    * retired (~7%)
+    * unemployed (~4%)
+    * full-time education (~4%)
+    * other inactive (~8%)
+* The private rented sector houses the highest proportion of non-UK nationals (74% of HRPs in the private rented sector are from the UK, compared to 92% of social renters and 96% of owner occupiers) [@english_housing_survey]
+
+
+```{r}
+sql(
+  "select *
+    from dataset_filtered
+    order by random()
+    "
+) %>%
+  head() %>%
+  knitr::kable()
+
+```
+
+
+### Subsample
+
+Since, the dataset is very well compiled but is large, we can work with reduced dataset and infer large scale effects from it. This reduction will allow speeding up the analysis and experimentation. <br/>
+
+We can see that majority of Local authorities have 10-15 MSOAs. To get a balanced representation, we chose to sample 10 MSOA from each Local authority. This will likely also ensure robust estimation of any random effects.
+
+```{r}
+sql(
+  "select lad_name,
+count(distinct(msoa)) as msoa_count
+from dataset_filtered
+group by lad_name
+"
+) %>%
+  ggplot() +
+  geom_histogram(aes(x = msoa_count)) +
+  geom_vline(aes(xintercept = 10), colour = "red") +
+  labs(subtitle = "MSOA count per Local authority")
+
+```
+
+
+The subsampling process does the following: <br/>
+
+* Sample all local authorities from 8 UK wide regions (e.g. West midlands, East of England etc.) but excluding London region (since market behaviour may not generalise to other regions and create issues when data is mixed with others, due to very high counts)
+* Within each of the local authorities sample 10 MSOAs at random
+* Get all the data in the sampled MSOAs
+
+The above procedure is deliberate in that it results in balanced data among Local authorities to avoid issues with inference. <br/>
+It goes without saying that this step means that Local Authorities and MSOAs need to be treated as random effects down the line (with appropriate heirarchy). <br/>
+The procedure ensures sufficient counts of Local Authorities and MSOAs to be able to reliably capture these random effects.
+
+
+```{r}
+sql("select * from dataset_sample") %>%
+  summarise(
+    rows = n(),
+    distinct_tenure = n_distinct(tenure),
+    distinct_occupation = n_distinct(occupation),
+    max_hrp_counts = max(counts_of_hrp),
+    min_hrp_counts = min(counts_of_hrp),
+    median_hrp_counts = median(counts_of_hrp),
+    distinct_lad = n_distinct(lad_name),
+    distinct_msoa = n_distinct(msoa),
+    .groups = "drop"
+  ) %>%
+  knitr::kable()
+
+```
+
+### EDA
+
+At the level of MSOA the proportion of rentership can appear quite chaotic and noisy.
+```{r}
+sql(
+  "
+select *
+  , counts_of_hrp/occupation_total as proportion_renting
+  from dataset_filtered
+  where msoa in (select distinct(msoa) from dataset_filtered order by random() limit 10)
+"
+) %>%
+  ggplot() +
+  geom_line(aes(
+    x = occupation,
+    y = proportion_renting,
+    colour = lad_name,
+    group = lad_name
+  )) +
+  labs(title = "Sample MSOA data per local authority") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+```
+
+Aggregated data shows clear differences in renting by occupation. Highly skilled and professional workers rent less, likely because they can more easily afford to buy.
+
+```{r}
+sql(
+  "
+select *
+  , counts_of_hrp/occupation_total as proportion_renting
+  from dataset_filtered
+"
+) %>%
+  ggplot() +
+  geom_boxplot(aes(x = occupation, y = proportion_renting)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  ylim(0, 0.5) +
+  labs(title = "All MSOA rentership")
+
+```
+
+
+The observation holds and patterns become more clear when the data is aggregated at Local authority level. This means that a heirarchical consideration of geographies could be a sensible inclusion in the model.
+
+```{r}
+sql(
+  "
+select lad_name
+  , occupation
+  , sum(counts_of_hrp)/sum(occupation_total) as proportion_renting
+  from dataset_filtered
+  -- where lad_name in (select distinct(lad_name) from dataset_filtered order by random() limit 10)
+  group by lad_name, occupation
+"
+) %>%
+  ggplot() +
+  geom_boxplot(aes(
+    x = occupation,
+    y = proportion_renting,
+  )) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  ylim(0, 0.5) +
+  labs(title = "All Local authority rentership")
+
+```
+
+
+```{r}
+high_counts <- sql(
+  "
+select msoa
+, lad_name
+, sum(occupation_total) as counts_of_hrp
+, round(sum(counts_of_hrp)/sum(occupation_total),3) as aggregate_proportion_renting
+from dataset_filtered
+group by msoa, lad_name
+order by 3 desc
+"
+)
+
+high_counts %>%
+  ggplot() +
+  geom_histogram(aes(x = counts_of_hrp))
+
+```
+
+There is a slightly long tail of working population per msoa. <br/>
+
+Looking at the msoa where the greatest proportion of working population is renting, a few key dense local authority areas are highlighted
+
+```{r}
+high_counts %>%
+  head(10) %>%
+  knitr::kable()
+
+```
+
+The age distribution of working population varies significantly across occupations. <br/>
+It is interesting to note that some occupations are over represented among older age groups (e.g. *Managers and Professionals*), whereas others are more evenly spread (e.g. *Elementary operations*). <br/>
+
+```{r}
+sql(
+  "select *
+  from dataset_filtered
+"
+) %>%
+  select(lad_name, msoa, occupation, starts_with("aged")) %>%
+  pivot_longer(
+    cols = starts_with("aged"),
+    names_to = "age_band",
+    values_to = "counts_of_usual_residents"
+  ) %>%
+  filter(age_band != "aged 15 years and under") %>%
+  ggplot() +
+  geom_boxplot(aes(
+    x = age_band,
+    y = counts_of_usual_residents
+  )) +
+  facet_wrap(~occupation, ncol = 3, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(title = "Age distribution of working population across MSOAs")
+
+```
+
+Since, age data has a long tailed distribution, log scaling is used to better scale it and also make its interpretation in the model more intuitive.
+
+## Analysis
+
+### Baseline Model: Fixed effects without location information
+
+We refer to data at MSOA level for modelling. For the baseline model, MSOA variable is excluded and *Elementary occupations* are treated as a reference category for *Occupation* variable. *aged 15 years and under* variable is dropped as it is irrelevant for this study. It is immediately obvious that occupation has significant association with proportion of people renting. <br/>
+
+```{r}
+dataset <- sql(
+  "
+select lad_name
+  , msoa
+  , occupation
+  , counts_of_hrp as renting_total
+  , occupation_total
+  , \"aged 16 to 24 years\" as age_16_24
+  , \"aged 25 to 34 years\" as age_25_34
+  , \"aged 35 to 49 years\" as age_35_49
+  , \"aged 50 to 64 years\" as age_50_64
+  , \"aged 65 years and over\" as age_over_65
+  , all_ages_total
+  from dataset_sample
+  where tenure = 'private rented or lives rent free'
+  order by msoa, occupation
+"
+) %>%
+  mutate(
+    occupation = relevel(
+      factor(occupation),
+      ref = "9. elementary occupations"
+    )
+  )
+
+glmod_base <- glm(
+  cbind(renting_total, occupation_total - renting_total) ~
+    occupation *
+    (log(age_16_24 + 1) +
+      log(age_25_34 + 1) +
+      log(age_35_49 + 1) +
+      log(age_50_64 + 1) +
+      log(age_over_65 + 1)),
+  data = dataset,
+  family = binomial
+)
+
+print(anova(glmod_base, test = "Chisq"))
+
+```
+
+The Scale-location diagnostics and QQ-Residuals suggest the dispersion is much higher than expected. This is also confirmed by the dispersion parameter, `{r} (residuals(glmod_base, type='pearson')^2/df.residual(glmod_base)) |> sum() |> round(2)`
+
+```{r}
+#| figure-height: 10
+#| figure-width: 10
+
+par(mfrow = c(2, 2))
+plot(glmod_base)
+par(mfrow = c(1, 1))
+
+```
+
+High residual points can be investigated to identify some issues. <br/>
+Primarily, these seem to areas in the city centers where rentership is much higher than what the model predicts and can be seen on the map too. <br/>
+
+```{r}
+ordered_residuals_glm_base <- dataset %>%
+  augment(glmod_base, .) %>%
+  select(
+    msoa,
+    lad_name,
+    occupation,
+    starts_with("age"),
+    renting_total,
+    occupation_total,
+    .resid
+  ) %>%
+  mutate(
+    actual_renting_proportion = round(renting_total / occupation_total, 2),
+    predicted_proportion = round(predict(glmod_base, ., type = "response"), 2)
+  ) %>%
+  arrange(desc(abs(.resid)))
+
+ordered_residuals_glm_base %>%
+  head(10) %>%
+  knitr::kable()
+
+```
+
+```{r}
+#| cache: true
+
+msoa_geometries <- athena_sql(glue::glue_sql(
+  "select msoa
+  , msoa_polygon_wkt
+  from geo.dim_msoa
+  where msoa in ({msoa_list*})",
+  msoa_list = ordered_residuals_glm_base %>% head(10) %>% pull(msoa),
+  .con = acon
+))
+
+```
+
+```{r}
+
+# Parse WKT to sf (4326 = WGS84 for leaflet)
+df_sf <- msoa_geometries %>%
+  mutate(
+    geometry = st_as_sfc(msoa_polygon_wkt, crs = 4326) # WKT → sfc
+  ) %>%
+  st_sf() # Promote to sf
+
+# Create popups
+df_sf <- df_sf %>%
+  mutate(popup = glue::glue("MSOA: {msoa}"))
+
+# Build leaflet map
+leaflet(df_sf) %>%
+  addTiles() %>% # Base map
+  addPolygons(
+    fillColor = "black",
+    fillOpacity = 0.6,
+    color = "black",
+    weight = 1,
+    highlightOptions = highlightOptions(
+      weight = 3,
+      color = "orange",
+      fillOpacity = 0.8
+    )
+  ) %>%
+  setView(lng = -1.5, lat = 52.5, zoom = 8) # England center
+
+```
+
+<br/>
+
+Overall it appears that including location information in the model is necessary to account for area-specific rentership patterns.
+
+### Introducing location context in the model
+
+ Each MSOA can have its own level of rentership that needs to be accounted for (and town centers can be very different from suburbs). <br/>
+ This is an opportunity for us to introduce location information (LAD and MSOA) in the model. We shall be mindful of the fact that the MSOA are randomly chosen and that MSOA are nested inside LAD.
+
+```{r}
+#| cache: true
+
+glmermod <- glmer(
+  cbind(renting_total, occupation_total - renting_total) ~
+    occupation +
+    I(log(age_16_24 + 1) / 10) +
+    I(log(age_25_34 + 1) / 10) +
+    I(log(age_35_49 + 1) / 10) +
+    I(log(age_50_64 + 1) / 10) +
+    I(log(age_over_65 + 1) / 10) +
+    (1 | lad_name) +
+    (1 | lad_name:msoa),
+  data = dataset,
+  family = binomial,
+  control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 200000))
+)
+
+```
+
+### Model evaluation
+
+Diagnostics have improved and residuals are smaller than before, so the addition of MSOAs in model is worthwhile. <br/>
+
+```{r}
+df_plot <- fortify.merMod(glmermod, dataset)
+
+par(mfrow = c(1, 2))
+plot(.resid ~ .fitted, df_plot)
+abline(h = 0, lty = 2)
+lines(lowess(df_plot$.fitted, df_plot$.resid), col = "blue", lwd = 2)
+halfnorm(df_plot$.resid)
+lines(c(0, 6), c(0, 6), lty = 2)
+par(mfrow = c(1, 1))
+
+```
+
+
+#### Error by occupation
+
+The model captures renting behaviour across different occupations reasonably well and does not seem to have biased results for any. <br/>
+An avenue for improvement can be with more information relevant to *Elementary occupations* and *Professional occupations* where the model seems to make large errors compared to others.
+
+```{r}
+df_plot %>%
+  ggplot() +
+  geom_boxplot(aes(x = occupation, y = .resid)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+The model is robust to how many people are engaged in particular occupations. It seems to make similar magnitudes of errors and on average is unbiased. For e.g. the accuracy is coparalble at a location fewer occupants are Managers vs a location where several occupants are Managers.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 10
+
+df_plot %>%
+  ggplot(aes(x = log(occupation_total), y = .resid)) +
+  geom_point(alpha = 0.1) +
+  facet_wrap(~occupation) +
+  geom_smooth()
+
+```
+
+#### Comparison
+
+Comparing predictions from the 2 models on the list of worse cases highlighted earlier, there again seems to be an improvement.
+
+```{r}
+ordered_residuals_glm_base %>%
+  rename(predicted_proportion_base = predicted_proportion) %>%
+  select(
+    msoa,
+    lad_name,
+    occupation,
+    starts_with("age"),
+    renting_total,
+    occupation_total,
+    actual_renting_proportion,
+    predicted_proportion_base
+  ) %>%
+  mutate(
+    predicted_proportion_glmer = round(
+      predict(glmermod, ., type = "response"),
+      2
+    )
+  ) %>%
+  select(-starts_with("age")) %>%
+  head(10) %>%
+  knitr::kable()
+
+```
+
+#### Error behaviour spatially
+
+The error in predicted probability of rentership is small for several MSOAs, even though a small subset was used in modelling.
+This is another good reason to retain the current model.
+```{r}
+#| cache: true
+
+msoa_geometries <- athena_sql(
+  "select msoa
+  , msoa_polygon_wkt
+  from geo.dim_msoa
+"
+)
+
+```
+
+```{r}
+#| cache: true
+
+dataset_full <- sql(
+  "
+select lad_name
+  , msoa
+  , occupation
+  , counts_of_hrp as renting_total
+  , occupation_total
+  , \"aged 16 to 24 years\" as age_16_24
+  , \"aged 25 to 34 years\" as age_25_34
+  , \"aged 35 to 49 years\" as age_35_49
+  , \"aged 50 to 64 years\" as age_50_64
+  , \"aged 65 years and over\" as age_over_65
+  , all_ages_total
+  from dataset
+  where tenure = 'private rented or lives rent free'
+  order by msoa, occupation
+"
+) %>%
+  mutate(
+    occupation = relevel(
+      factor(occupation),
+      ref = "9. elementary occupations"
+    ),
+    .pred = predict(
+      glmermod,
+      newdata = .,
+      type = "response",
+      allow.new.levels = TRUE
+    ),
+    mu = .pred * occupation_total,
+    # .resid = (renting_total - mu) / sqrt(mu * (1 - .pred)),
+    .resid = renting_total / occupation_total - .pred
+  )
+
+# Parse WKT to sf (4326 = WGS84 for leaflet)
+df_sf <- msoa_geometries %>%
+  inner_join(
+    dataset_full %>%
+      group_by(msoa) %>%
+      summarise(residual = mean(abs(.resid))),
+    by = "msoa"
+  ) %>%
+  mutate(
+    geometry = st_as_sfc(msoa_polygon_wkt, crs = 4326) # WKT → sfc
+  ) %>%
+  st_sf()
+
+
+ggplot() +
+  annotation_map_tile(
+    type = "https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/${z}/${x}/${y}.png",
+    zoomin = 0,
+    progress = "none"
+  ) +
+  geom_sf(
+    data = df_sf,
+    aes(fill = residual),
+    color = NA,
+    linewidth = 0.1
+  ) +
+  scale_fill_gradientn(
+    colors = RColorBrewer::brewer.pal(9, "RdYlBu")[9:1], # reverse RdYlBu
+    name = "MAE (prob)"
+  )
+
+```
+
+#### Random effects and dispersion
+
+Random effects of LAD appear reasonably normally distributed. <br/>
+MSOA nested inside LAD are slighly more dispersed and have longer tails, but it doesn't seem too problematic to affect reliability of the model.
+
+```{r}
+par(mfrow = c(1, 2))
+qqnorm(
+  ranef(glmermod)$lad_name[[1]],
+  main = "LAD RE"
+)
+qqline(ranef(glmermod)$lad_name[[1]], col = "red")
+
+qqnorm(
+  ranef(glmermod)$`lad_name:msoa`[[1]],
+  main = "LAD:MSOA RE"
+)
+qqline(ranef(glmermod)$`lad_name:msoa`[[1]], col = "red")
+
+par(mfrow = c(1, 1))
+
+```
+
+Before moving to inference using this model, it is important to check how it fits. ChiSq GoF test suggests p-value `{r} deviance(glmermod) |> pchisq(df.residual(glmermod), lower.tail = F) |> round(2)`, which indicates that there is still quite a lot of variance in data that isn't explained by the current model. <br/>
+
+The dispersion parameter is `{r} (residuals(glmermod, type='pearson')^2/df.residual(glmermod)) |> sum() |> round(2)`. This indicates that there is some degree of overdispersion. It is likely a result of not including more factors affecting rentership (e.g. presence of employers, type of location, commute etc.) and using a simplistic model. The overdispersion is largely relevant for standard errors, but fixed effects which are our quantity of interest should be unchanged. Inference will likely be worse but with such a simplistic model we do not expect significant impact. We shall retain the current model as it is since it provides useful insights as we shall see in the following sections.
+
+
+### Interpretation and application
+
+#### Occupation effect
+
+Looking at the coefficients of Occupation types, since *Elementary Occupations* was reference class, the odds for any Occupation are relative to it. <br/>
+In general any Occupation category is less likely to rent compared to *Elementary Occupations*, in particular *Professionals* are nearly 55% less likely (0.44x) to rent. <br/>
+There is intuitive sense to the effects as higher paid occupations are less likely to rent, except interestingly that unlike observations in raw data, *Managers* are not the least likely renters when age is taken into account.
+
+```{r}
+df_coef <- glmermod %>%
+  fixef() %>%
+  tidy() %>%
+  rename(coefficient = x) %>%
+  mutate(
+    occupation = case_when(
+      str_detect(
+        names,
+        'managers, directors and senior officials'
+      ) ~ '1. managers, directors and senior officials',
+
+      str_detect(
+        names,
+        'professional occupations'
+      ) ~ '2. professional occupations',
+
+      str_detect(
+        names,
+        'associate professional and technical occupations'
+      ) ~ '3. associate professional and technical occupations',
+
+      str_detect(
+        names,
+        'administrative and secretarial occupations'
+      ) ~ '4. administrative and secretarial occupations',
+
+      str_detect(
+        names,
+        'skilled trades occupations'
+      ) ~ '5. skilled trades occupations',
+
+      str_detect(
+        names,
+        'caring, leisure and other service occupations'
+      ) ~ '6. caring, leisure and other service occupations',
+
+      str_detect(
+        names,
+        'sales and customer service occupations'
+      ) ~ '7. sales and customer service occupations',
+
+      str_detect(
+        names,
+        'process, plant and machine operatives'
+      ) ~ '8. process, plant and machine operatives',
+
+      str_detect(
+        names,
+        'elementary occupations'
+      ) ~ '9. elementary occupations',
+
+      .default = 'unknown'
+    )
+  )
+
+ggplot(df_coef %>% filter(str_detect(names, "occupation"))) +
+  geom_bar(
+    aes(x = occupation, y = 100 * (exp(coefficient) - 1)),
+    stat = "identity"
+  ) +
+  labs(
+    subtitle = "Odds of renting (relative to Elementary Occupations)",
+    y = "Difference in Odds [%]"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+```
+
+
+#### Age effect
+
+Age plays a key role in likelihood of renting too. Rentership is highly sensitive to population in 25-34 year age bracket. With a 10% increase in population in that age bracket, odds increase by approx `{r} glmermod %>% fixef() %>% tidy() %>% filter(str_detect(names, 'age_25_34')) %>% pull(x) %>% prod(log(1.1)/10) %>% exp() %>% sum(-1) %>% prod(100) %>% round(1)`% <br/>
+
+```{r}
+df_coef <- glmermod %>%
+  fixef() %>%
+  tidy() %>%
+  rename(coefficient = x)
+
+df_plot <- df_coef %>%
+  filter(str_detect(names, "age_")) %>%
+  cross_join(tibble(
+    fraction_change_in_population = seq(0.8, 1.2, by = 0.01)
+  )) %>%
+  mutate(
+    age_band = case_when(
+      str_detect(names, "16_24") ~ "aged 16 to 24 years",
+      str_detect(names, "25_34") ~ "aged 25 to 34 years",
+      str_detect(names, "35_49") ~ "aged 35 to 49 years",
+      str_detect(names, "50_64") ~ "aged 50 to 64 years",
+      str_detect(names, "over_65") ~ "aged 65 years and over",
+      TRUE ~ "unknown"
+    ),
+    change_in_odds = (exp(
+      coefficient / 10 * log(fraction_change_in_population)
+    ) -
+      1) *
+      100
+  )
+
+ggplot(
+  df_plot
+) +
+  geom_line(
+    aes(
+      x = (fraction_change_in_population - 1) * 100,
+      y = change_in_odds,
+      colour = age_band
+    )
+  ) +
+  labs(
+    subtitle = "Effect of age band population change on odds of renting",
+    y = "Change in Odds [%]",
+    x = "Percentage change in age band population [%]"
+  )
+
+```
+
+
+## Conclusion
+
+This analysis provides descriptive evidence that who rents, and where, is shaped by occupation and age. Across UK MSOAs (excluding London), higher‑skilled groups—especially professionals—are consistently less likely to rent than lower‑skilled groups. Rentership peaks among 25–34 year olds, and remains sensitive to the age mix in local working populations. Introducing local authority and neighbourhood random effects improves fit and reveals meaningful spatial variation: town centres and dense urban MSOAs tend to have higher rentership than suburban areas, even after adjusting for occupation and age.
+
+The models are simple and intentionally transparent. While they capture core patterns, residual variance and mild overdispersion indicate omitted local factors (e.g., price levels, employer presence, transport access) still matter. Results should be interpreted as associations, not causal effects.
+
+Several limitations are important. Age‑by‑occupation counts refer to all workers rather than household reference persons, creating a measurement disconnect with tenure data. London is excluded, so findings do not generalise to its market. The analysis is cross‑sectional and does not track transitions into or out of renting.
+
+Despite these caveats, the evidence suggests rental demand is highest where younger workers are concentrated and falls with occupational skill. For planning and housing supply, this points to tailoring new rental provision toward places with strong 25–34 cohorts and occupations more likely to rent.

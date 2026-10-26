@@ -1,0 +1,613 @@
+---
+title: "Data preparation"
+author: "Prateek"
+date: "2025-11-30"
+execute:
+  echo: false
+draft: true
+
+---
+
+
+```{r}
+#| warning: false
+readRenviron(file.path(here::here(), ".local_credentials"))
+
+renv::load(here::here())
+library(tidyverse)
+library(DBI)
+library(duckdb)
+library(tidyverse)
+library(RAthena)
+
+data_dir <- file.path(here::here(), "data")
+
+con <- dbConnect(
+  drv = duckdb(),
+  dbdir = file.path(data_dir, "lab.duckdb")
+)
+
+acon <- dbConnect(
+  athena(),
+  workgroup = "primary",
+  schema_name = "default",
+  s3_staging_dir = "s3://aws-athena-query-results-434616802091-eu-west-1",
+  profile_name = "personal",
+  region = "eu-west-1",
+)
+athena_sql <- function(query) {
+  tibble(dbGetQuery(acon, query))
+}
+
+sql <- function(query) {
+  tibble(dbGetQuery(con, query))
+}
+
+theme_set(theme_minimal())
+
+```
+
+
+```{sql, connection="con"}
+install httpfs;
+load httpfs;
+
+```
+
+## MSOA level tenure-occupation data
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create or replace table msoa_tenure_occupation as
+(
+    select
+        *,
+        'Owns outright' as "Tenure of household"
+    from
+        read_csv_auto (
+            'data/msoa_tenure_occupation.csv',
+            skip = 7296,
+            null_padding = true
+        )
+    LIMIT
+        7264
+)
+union all
+(
+    select
+        *,
+        'Owns with a mortgage or loan or shared ownership' as "Tenure of household"
+    from
+        read_csv_auto (
+            'data/msoa_tenure_occupation.csv',
+            skip = 14585,
+            null_padding = true
+        )
+    LIMIT
+        7264
+)
+union all
+(
+    select
+        *,
+        'Social rented' as "Tenure of household"
+    from
+        read_csv_auto (
+            'data/msoa_tenure_occupation.csv',
+            skip = 21873,
+            null_padding = true
+        )
+    LIMIT
+        7264
+)
+union all
+(
+    select
+        *,
+        'Private rented or lives rent free' as "Tenure of household"
+    from
+        read_csv_auto (
+            'data/msoa_tenure_occupation.csv',
+            skip = 29161,
+            null_padding = true
+        )
+    LIMIT
+        7264
+)
+
+```
+
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create
+or replace table occupation_by_tenure as (
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('1. Managers, directors and senior officials') as occupation,
+        "1. Managers, directors and senior officials"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('2. Professional occupations') as occupation,
+        "2. Professional occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower(
+            '3. Associate professional and technical occupations'
+        ) as occupation,
+        "3. Associate professional and technical occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('4. Administrative and secretarial occupations') as occupation,
+        "4. Administrative and secretarial occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('5. Skilled trades occupations') as occupation,
+        "5. Skilled trades occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower(
+            '6. Caring, leisure and other service occupations'
+        ) as occupation,
+        "6. Caring, leisure and other service occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('7. Sales and customer service occupations') as occupation,
+        "7. Sales and customer service occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('8. Process, plant and machine operatives') as occupation,
+        "8. Process, plant and machine operatives"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Tenure of household") as tenure,
+        lower('9. Elementary occupations') as occupation,
+        "9. Elementary occupations"::double as counts_of_hrp
+    from
+        msoa_tenure_occupation
+)
+
+```
+
+
+## Additional data
+
+### Geo data
+
+```{r}
+#| cache: false
+#| warning: false
+
+geo_mapping <- athena_sql(
+  "select region
+  , lad
+  , msoa
+  , lsoa
+    from geo.post_town_geo_mapping"
+)
+
+dim_lad <- athena_sql(
+  "
+select lad
+, lad_name
+from geo.dim_lad
+"
+)
+
+dim_region <- athena_sql(
+  "
+select region
+, region_name
+from geo.dim_region
+"
+)
+
+dbWriteTable(con, "geo_mapping", geo_mapping, overwrite = TRUE)
+dbWriteTable(con, "dim_lad", dim_lad, overwrite = TRUE)
+dbWriteTable(con, "dim_region", dim_region, overwrite = TRUE)
+
+```
+
+
+### MSOA level occupation-age data
+
+
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create
+or replace table msoa_occupation_age as (
+    (
+        select
+            *,
+            'Aged 15 years and under' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 7296,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+    union all
+    (
+        select
+            *,
+            'Aged 16 to 24 years' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 14585,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+    union all
+    (
+        select
+            *,
+            'Aged 25 to 34 years' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 21873,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+    union all
+    (
+        select
+            *,
+            'Aged 35 to 49 years' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 29161,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+    union all
+    (
+        select
+            *,
+            'Aged 50 to 64 years' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 36449,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+    union all
+    (
+        select
+            *,
+            'Aged 65 years and over' as "Age"
+        from
+            read_csv_auto (
+                'data/msoa_occupation_age.csv',
+                skip = 43737,
+                null_padding = true
+            )
+        LIMIT
+            7264
+    )
+)
+
+```
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create
+or replace table occupation_by_age_long as (
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('1. Managers, directors and senior officials') as occupation,
+        "1. Managers, directors and senior officials"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('2. Professional occupations') as occupation,
+        "2. Professional occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower(
+            '3. Associate professional and technical occupations'
+        ) as occupation,
+        "3. Associate professional and technical occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('4. Administrative and secretarial occupations') as occupation,
+        "4. Administrative and secretarial occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('5. Skilled trades occupations') as occupation,
+        "5. Skilled trades occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower(
+            '6. Caring, leisure and other service occupations'
+        ) as occupation,
+        "6. Caring, leisure and other service occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('7. Sales and customer service occupations') as occupation,
+        "7. Sales and customer service occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('8. Process, plant and machine operatives') as occupation,
+        "8. Process, plant and machine operatives"::double as counts_of_residents
+    from
+        msoa_occupation_age
+    union all
+    select
+        lower(
+            trim(split_part("2021 super output area - middle layer", ':', 1))
+        ) as msoa,
+        lower("Age") as age,
+        lower('9. Elementary occupations') as occupation,
+        "9. Elementary occupations"::double as counts_of_residents
+    from
+        msoa_occupation_age
+)
+
+```
+
+```{sql, connection = "con"}
+--| warning: false
+--| cache: false
+create
+or replace table occupation_by_age as
+with base as (
+select
+    msoa,
+    occupation,
+    case
+        when age = 'aged 15 years and under' then counts_of_residents
+        else 0
+    end as "aged 15 years and under",
+    case
+        when age = 'aged 16 to 24 years' then counts_of_residents
+        else 0
+    end as "aged 16 to 24 years",
+    case
+        when age = 'aged 25 to 34 years' then counts_of_residents
+        else 0
+    end as "aged 25 to 34 years",
+    case
+        when age = 'aged 35 to 49 years' then counts_of_residents
+        else 0
+    end as "aged 35 to 49 years",
+    case
+        when age = 'aged 50 to 64 years' then counts_of_residents
+        else 0
+    end as "aged 50 to 64 years",
+    case
+        when age = 'aged 65 years and over' then counts_of_residents
+        else 0
+    end as "aged 65 years and over",
+    sum(counts_of_residents) over (
+            partition by
+                msoa, occupation
+        ) as total
+from
+    occupation_by_age_long
+)
+select msoa
+, occupation
+, sum("aged 15 years and under") as "aged 15 years and under"
+, sum("aged 16 to 24 years") as "aged 16 to 24 years"
+, sum("aged 25 to 34 years") as "aged 25 to 34 years"
+, sum("aged 35 to 49 years") as "aged 35 to 49 years"
+, sum("aged 50 to 64 years") as "aged 50 to 64 years"
+, sum("aged 65 years and over") as "aged 65 years and over"
+, max(total) as total
+from base
+group by msoa, occupation
+order by msoa, occupation
+
+```
+
+## Dataset
+
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create or replace table dataset as
+    (
+        select a.*
+        , sum(a.counts_of_hrp) over (partition by a.msoa, a.occupation) as occupation_total
+        , "aged 15 years and under"
+        , "aged 16 to 24 years"
+        , "aged 25 to 34 years"
+        , "aged 35 to 49 years"
+        , "aged 50 to 64 years"
+        , "aged 65 years and over"
+        , b.total as all_ages_total
+        , c.region
+        , d.lad_name
+        from occupation_by_tenure a inner join occupation_by_age b
+            on a.msoa = b.msoa and a.occupation = b.occupation inner join
+            (
+                select distinct
+                region
+                , lad
+                , msoa
+                from geo_mapping
+            ) c on a.msoa = c.msoa inner join dim_lad d on c.lad = d.lad
+        where c.region <> 'e12000007' -- london
+    )
+
+```
+
+
+
+### Filtered
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create or replace table dataset_filtered as
+    (
+        select *
+        from dataset
+        where tenure = 'private rented or lives rent free'
+    )
+
+```
+
+
+### Subsampled
+
+
+```{sql, connection="con"}
+--| warning: false
+--| cache: false
+
+create or replace table dataset_sample as (
+    with ranked_geos as (
+        select b.region
+        , a.lad
+        , a.msoa
+        , a.msoa_rank
+        , b.lad_rank
+        from ( /* Ranked msoa per LAD */
+              select *,
+                    row_number() over(partition by lad order by random()) as msoa_rank
+                from  (select distinct
+                            lad,
+                            msoa
+                        from
+                            geo_mapping
+                    )
+                ) a inner join
+                  (/* ranked LADs per region */
+                  select *
+                  , row_number() over(partition by region order by random()) as lad_rank
+                  from (select distinct
+                              region,
+                              lad
+                        from geo_mapping)
+                  ) b on a.lad = b.lad
+    )
+    select a.*
+    from dataset_filtered a
+            left join ranked_geos b on a.msoa = b.msoa
+    where b.lad_rank <= 200 -- take all LAD
+    and b.msoa_rank <= 10 -- take 10 MSOA per LAD
+)
+
+```

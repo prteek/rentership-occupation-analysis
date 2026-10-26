@@ -1,0 +1,13 @@
+_output/
+.quarto/
+*_files/
+*_cache/
+*.quarto_ipynb
+.Rhistory
+.DS_Store
+data/lab.duckdb
+data/*.wal
+
+/.quarto/
+**/*.quarto_ipynb
+rosm.cache/
