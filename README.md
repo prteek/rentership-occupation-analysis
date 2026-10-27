@@ -37,9 +37,9 @@ Rendering reuses `_freeze/` until a code chunk changes. Re-running the paper nee
 the Athena tables holding MSOA boundaries (AWS profile `personal`), plus `RETICULATE_PYTHON` pointing at a Python
 with `boto3` and `CHROMOTE_CHROME` at a headless Chrome for the map screenshots.
 
-The frozen results are the published paper's. Moving the paper here only changed where it looks for `data/`, so its
-frozen results were carried over (re-keyed to the new file). A full re-run in this repo gives the same numbers;
-only the randomly chosen example rows in the exploratory section change, because those queries are unseeded.
+The figures were reworked for the PDF (horizontal occupation plots, taller panels, map markers), so the paper was
+re-run here: every number matches the first alphaXiv version, but the randomly chosen example rows in the
+exploratory section differ, because those queries are unseeded.
 
 `dataset_sample` in the database is the exact sample the paper was fitted on (an unseeded draw); don't redraw it
 without refitting the paper.

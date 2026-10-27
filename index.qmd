@@ -209,6 +209,7 @@ sql("select * from dataset_sample") %>%
 
 At the level of MSOA the proportion of rentership can appear quite chaotic and noisy.
 ```{r}
+#| fig-height: 6
 sql(
   "
 select *
@@ -225,7 +226,15 @@ select *
     group = lad_name
   )) +
   labs(title = "Sample MSOA data per local authority") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+  coord_flip() +
+  scale_x_discrete(limits = rev) +  # occupations top to bottom, names readable
+  guides(colour = guide_legend(ncol = 2, title.position = "top")) +
+  theme(
+    legend.position = "bottom",
+    legend.justification = "left",
+    legend.text = element_text(size = 7),
+    plot.title.position = "plot"
+  )
 
 ```
 
@@ -241,9 +250,10 @@ select *
 ) %>%
   ggplot() +
   geom_boxplot(aes(x = occupation, y = proportion_renting)) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   ylim(0, 0.5) +
-  labs(title = "All MSOA rentership")
+  labs(title = "All MSOA rentership") +
+  coord_flip() +
+  scale_x_discrete(limits = rev)  # occupations top to bottom, names readable
 
 ```
 
@@ -266,9 +276,10 @@ select lad_name
     x = occupation,
     y = proportion_renting,
   )) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   ylim(0, 0.5) +
-  labs(title = "All Local authority rentership")
+  labs(title = "All Local authority rentership") +
+  coord_flip() +
+  scale_x_discrete(limits = rev)  # occupations top to bottom, names readable
 
 ```
 
@@ -307,6 +318,7 @@ The age distribution of working population varies significantly across occupatio
 It is interesting to note that some occupations are over represented among older age groups (e.g. *Managers and Professionals*), whereas others are more evenly spread (e.g. *Elementary operations*). <br/>
 
 ```{r}
+#| fig-height: 9
 sql(
   "select *
   from dataset_filtered
@@ -324,7 +336,12 @@ sql(
     x = age_band,
     y = counts_of_usual_residents
   )) +
-  facet_wrap(~occupation, ncol = 3, scales = "free_y") +
+  facet_wrap(
+    ~occupation,
+    ncol = 3,
+    scales = "free_y",
+    labeller = label_wrap_gen(width = 28)  # long occupation names over two lines
+  ) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   labs(title = "Age distribution of working population across MSOAs")
 
@@ -383,8 +400,8 @@ print(anova(glmod_base, test = "Chisq"))
 The Scale-location diagnostics and QQ-Residuals suggest the dispersion is much higher than expected. This is also confirmed by the dispersion parameter, `{r} (residuals(glmod_base, type='pearson')^2/df.residual(glmod_base)) |> sum() |> round(2)`
 
 ```{r}
-#| figure-height: 10
-#| figure-width: 10
+#| fig-height: 10
+#| fig-width: 10
 
 par(mfrow = c(2, 2))
 plot(glmod_base)
@@ -460,7 +477,15 @@ leaflet(df_sf) %>%
       fillOpacity = 0.8
     )
   ) %>%
-  setView(lng = -1.5, lat = 52.5, zoom = 8) # England center
+  # MSOAs are small next to the area they span: mark each so it stays visible when zoomed out
+  addCircleMarkers(
+    data = suppressWarnings(st_centroid(df_sf)),
+    radius = 6,
+    color = "red",
+    weight = 2,
+    fillOpacity = 0.4,
+    label = ~msoa
+  ) # leaflet fits the view to the data
 
 ```
 
@@ -520,7 +545,8 @@ An avenue for improvement can be with more information relevant to *Elementary o
 df_plot %>%
   ggplot() +
   geom_boxplot(aes(x = occupation, y = .resid)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  coord_flip() +
+  scale_x_discrete(limits = rev)  # occupations top to bottom, names readable
 ```
 
 The model is robust to how many people are engaged in particular occupations. It seems to make similar magnitudes of errors and on average is unbiased. For e.g. the accuracy is coparalble at a location fewer occupants are Managers vs a location where several occupants are Managers.
@@ -753,7 +779,9 @@ ggplot(df_coef %>% filter(str_detect(names, "occupation"))) +
     subtitle = "Odds of renting (relative to Elementary Occupations)",
     y = "Difference in Odds [%]"
   ) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  coord_flip() +
+  scale_x_discrete(limits = rev) +  # occupations top to bottom, names readable
+  theme(plot.title.position = "plot")
 
 ```
 
