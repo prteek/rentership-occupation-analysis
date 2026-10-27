@@ -39,15 +39,14 @@ cached by knitr in `blog/index_cache/`). It needs no network access: the maps ar
 
 ## Notes
 
-- **The write-up is a blog post, not a paper.** It replaced the alphaXiv paper (PDF build, frozen results) on
-  2026-10-27. Re-run, it reproduces the paper's numbers: dispersion 9.33 for the binomial GLM and 2.08 for the mixed
-  model, 3.8% higher odds of renting for 10% more 25–34 year olds, professionals' odds 55% below elementary
-  occupations. The paper's randomly drawn example rows are gone, so every number in the post is reproducible.
+- **The write-up is a blog post**, reproducible from the data: dispersion 9.33 for the binomial GLM and 2.08 for the
+  mixed model, 3.8% higher odds of renting for 10% more 25–34 year olds, professionals' odds 55% below elementary
+  occupations. There are no randomly drawn example rows, so every number in the post is reproducible.
 - **MSOA boundaries.** `data/msoa_boundaries.gpkg` holds all 7,264 MSOAs of England and Wales, simplified to 50 m.
-  They were taken from the Athena table `geo.dim_msoa` (via the paper's knitr cache) so the post doesn't need AWS.
+  They were taken from the Athena table `geo.dim_msoa` (via an earlier knitr cache) so the post doesn't need AWS.
   To rebuild it, query `select msoa, msoa_polygon_wkt from geo.dim_msoa`, convert with `sf::st_as_sfc(crs = 4326)`,
   simplify with `st_simplify(dTolerance = 50)` in EPSG:27700 and write with `sf::st_write`.
-- **No basemap.** The paper's CARTO tiles now need an API key (they render with a watermark), so the maps show the
+- **No basemap.** CARTO tiles now need an API key (they render with a watermark), so the maps show the
   MSOAs on their own.
 - **The data is England only.** `dataset` and `dataset_sample` hold the eight English regions outside London; there
   are no Welsh MSOAs.
