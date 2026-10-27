@@ -3,10 +3,10 @@
 # (locally: `hf auth login` as prteek; in CI: HF_TOKEN):
 #   dataset       export every table of data/lab.duckdb to data/<table>.parquet, upload them with lab.duckdb and the card
 #   dataset-card  only the card (CI: data/lab.duckdb is not in git, so the data itself is published by hand)
-# Usage: huggingface/publish.sh [message] [dataset|dataset-card]   (default: dataset)
+# Usage: ./publish.sh [message] [dataset|dataset-card]   (default: dataset)
 # Needs the duckdb CLI for `dataset`. Set HF_CLI=hf to use an installed hf CLI instead of `uvx hf`.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")"
 msg="${1:-Update}"
 shift || true
 if [ $# -gt 0 ]; then targets=("$@"); else targets=(dataset); fi
@@ -35,10 +35,10 @@ for t in "${targets[@]}"; do
       done
       duckdb -init /dev/null -readonly data/lab.duckdb "$sql"
       cp data/lab.duckdb "$stage/dataset/lab.duckdb"
-      cp huggingface/dataset/README.md "$stage/dataset/README.md"
+      cp dataset/README.md "$stage/dataset/README.md"
       "${hf[@]}" upload "$repo" "$stage/dataset" . --repo-type dataset --commit-message "$msg" ;;
     dataset-card)
-      "${hf[@]}" upload "$repo" huggingface/dataset/README.md README.md --repo-type dataset --commit-message "$msg" ;;
+      "${hf[@]}" upload "$repo" dataset/README.md README.md --repo-type dataset --commit-message "$msg" ;;
     *)
       echo "unknown target: $t" >&2; exit 1 ;;
   esac

@@ -52,8 +52,8 @@ A small relational dataset built from the 2021 Census for England and Wales. It 
 Middle Layer Super Output Areas (MSOAs, neighbourhoods of roughly 2,000 to 6,000 households),
 together with a geography lookup up to local authority and region.
 
-It was put together for the paper
-[*Rentership ~ Occupation, Analysis*](https://www.alphaxiv.org/abs/2610.rentership-occupation-analysis) on alphaXiv,
+It was put together for the blog post
+[*Who Rents?*](https://huggingface.co/blog/prteek/rentership-occupation-analysis) on Hugging Face,
 which models how occupation and age relate to private renting. Code, including the script that builds the database
 (`data_preparation.qmd`): [github.com/prteek/rentership-occupation-analysis](https://github.com/prteek/rentership-occupation-analysis).
 

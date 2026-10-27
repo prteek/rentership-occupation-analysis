@@ -9,55 +9,6 @@
     ]
   },
   "Packages": {
-    "abind": {
-      "Package": "abind",
-      "Version": "1.4-8",
-      "Source": "Repository",
-      "Date": "2024-09-08",
-      "Title": "Combine Multidimensional Arrays",
-      "Authors@R": "c(person(\"Tony\", \"Plate\", email = \"tplate@acm.org\", role = c(\"aut\", \"cre\")), person(\"Richard\", \"Heiberger\", role = c(\"aut\")))",
-      "Maintainer": "Tony Plate <tplate@acm.org>",
-      "Description": "Combine multidimensional arrays into a single array. This is a generalization of 'cbind' and 'rbind'.  Works with vectors, matrices, and higher-dimensional arrays (aka tensors). Also provides functions 'adrop', 'asub', and 'afill' for manipulating, extracting and replacing data in arrays.",
-      "Depends": [
-        "R (>= 1.5.0)"
-      ],
-      "Imports": [
-        "methods",
-        "utils"
-      ],
-      "License": "MIT + file LICENSE",
-      "NeedsCompilation": "no",
-      "Author": "Tony Plate [aut, cre], Richard Heiberger [aut]",
-      "Repository": "CRAN"
-    },
-    "AsioHeaders": {
-      "Package": "AsioHeaders",
-      "Version": "1.30.2-1",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        {}
-      ],
-      "Imports": [
-        {}
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        {}
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "BSL-1.0",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.1",
@@ -532,50 +483,6 @@
       "Author": "Jennifer Bryan [cre, aut], Hadley Wickham [ctb]",
       "Maintainer": "Jennifer Bryan <jenny@stat.ubc.ca>",
       "Repository": "CRAN"
-    },
-    "chromote": {
-      "Package": "chromote",
-      "Version": "0.5.1",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        {}
-      ],
-      "Imports": [
-        "cli",
-        "curl",
-        "fastmap",
-        "jsonlite",
-        "later (>= 1.1.0)",
-        "magrittr",
-        "processx",
-        "promises (>= 1.1.1)",
-        "R6",
-        "rlang (>= 1.1.0)",
-        "utils",
-        "websocket (>= 1.2.0)",
-        "withr",
-        "zip"
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "showimage",
-        "testthat (>= 3.0.0)"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
     },
     "class": {
       "Package": "class",
@@ -1967,57 +1874,6 @@
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "CRAN"
     },
-    "ggspatial": {
-      "Package": "ggspatial",
-      "Version": "1.1.10",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Spatial Data Framework for ggplot2",
-      "Authors@R": "c( person(\"Dewey\", \"Dunnington\", email = \"dewey@fishandwhistle.net\",  role = c(\"aut\", \"cre\"),  comment = c(ORCID = \"0000-0002-9415-4582\") ), person(\"Brent\", \"Thorne\", role = \"ctb\", comment = c(ORCID = \"0000-0002-1099-3857\")), person(\"Diego\", \"Hernangómez\", role = \"ctb\", comment = c(ORCID = \"0000-0001-8457-4658\")) )",
-      "Maintainer": "Dewey Dunnington <dewey@fishandwhistle.net>",
-      "Description": "Spatial data plus the power of the ggplot2 framework means easier mapping when input  data are already in the form of spatial objects.",
-      "License": "GPL-3",
-      "Depends": [
-        "R (>= 2.10)"
-      ],
-      "Imports": [
-        "sf",
-        "ggplot2 (>= 3.0.0)",
-        "rosm (>= 0.2)",
-        "abind",
-        "methods",
-        "tibble",
-        "scales",
-        "tidyr",
-        "rlang",
-        "grid",
-        "glue"
-      ],
-      "Suggests": [
-        "prettymapr",
-        "knitr",
-        "rmarkdown",
-        "sp",
-        "raster",
-        "terra",
-        "testthat (>= 3.0.0)",
-        "dplyr",
-        "withr",
-        "ggrepel",
-        "stars",
-        "covr",
-        "vdiffr",
-        "lwgeom"
-      ],
-      "URL": "https://paleolimbot.github.io/ggspatial/, https://github.com/paleolimbot/ggspatial",
-      "BugReports": "https://github.com/paleolimbot/ggspatial/issues",
-      "RoxygenNote": "7.3.2",
-      "Encoding": "UTF-8",
-      "Config/testthat/edition": "3",
-      "NeedsCompilation": "no",
-      "Author": "Dewey Dunnington [aut, cre] (ORCID: <https://orcid.org/0000-0002-9415-4582>), Brent Thorne [ctb] (ORCID: <https://orcid.org/0000-0002-1099-3857>), Diego Hernangómez [ctb] (ORCID: <https://orcid.org/0000-0001-8457-4658>)",
-      "Repository": "CRAN"
-    },
     "globals": {
       "Package": "globals",
       "Version": "0.19.1",
@@ -2717,25 +2573,6 @@
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
       "Repository": "CRAN"
     },
-    "jpeg": {
-      "Package": "jpeg",
-      "Version": "0.1-11",
-      "Source": "Repository",
-      "Title": "Read and write JPEG images",
-      "Author": "Simon Urbanek [aut, cre, cph] (https://urbanek.org, <https://orcid.org/0000-0003-2297-1732>)",
-      "Authors@R": "person(\"Simon\", \"Urbanek\", role=c(\"aut\",\"cre\",\"cph\"), email=\"Simon.Urbanek@r-project.org\", comment=c(\"https://urbanek.org\", ORCID=\"0000-0003-2297-1732\"))",
-      "Maintainer": "Simon Urbanek <Simon.Urbanek@r-project.org>",
-      "Depends": [
-        "R (>= 2.9.0)"
-      ],
-      "Description": "This package provides an easy and simple way to read, write and display bitmap images stored in the JPEG format. It can read and write both files and in-memory raw vectors.",
-      "License": "GPL-2 | GPL-3",
-      "SystemRequirements": "libjpeg",
-      "URL": "https://www.rforge.net/jpeg/",
-      "BugReports": "https://github.com/s-u/jpeg/issues",
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN"
-    },
     "jquerylib": {
       "Package": "jquerylib",
       "Version": "0.1.4",
@@ -2896,39 +2733,6 @@
         "graphics"
       ],
       "Repository": "CRAN"
-    },
-    "later": {
-      "Package": "later",
-      "Version": "1.4.8",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 3.5)"
-      ],
-      "Imports": [
-        "Rcpp (>= 1.0.10)",
-        "rlang"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "Suggests": [
-        "knitr",
-        "nanonext",
-        "promises",
-        "rmarkdown",
-        "testthat (>= 3.0.0)"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "Type": "source"
     },
     "lattice": {
       "Package": "lattice",
@@ -3819,44 +3623,6 @@
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
-    "otel": {
-      "Package": "otel",
-      "Version": "0.2.0",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 3.6.0)"
-      ],
-      "Imports": [
-        {}
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        "callr",
-        "cli",
-        "glue",
-        "jsonlite",
-        "otelsdk",
-        "processx",
-        "shiny",
-        "spelling",
-        "testthat (>= 3.0.0)",
-        "utils",
-        "withr"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
     "parallelly": {
       "Package": "parallelly",
       "Version": "1.47.0",
@@ -4091,41 +3857,6 @@
       "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
-    "plyr": {
-      "Package": "plyr",
-      "Version": "1.8.9",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 3.1.0)"
-      ],
-      "Imports": [
-        "Rcpp (>= 0.11.0)"
-      ],
-      "LinkingTo": [
-        "Rcpp"
-      ],
-      "Suggests": [
-        "abind",
-        "covr",
-        "doParallel",
-        "foreach",
-        "iterators",
-        "itertools",
-        "tcltk",
-        "testthat"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
     "png": {
       "Package": "png",
       "Version": "0.1-9",
@@ -4144,39 +3875,6 @@
       "BugReports": "https://github.com/s-u/png/issues/",
       "NeedsCompilation": "yes",
       "Repository": "CRAN"
-    },
-    "prettymapr": {
-      "Package": "prettymapr",
-      "Version": "0.2.5",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        {}
-      ],
-      "Imports": [
-        "digest",
-        "rjson",
-        "httr",
-        "plyr"
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        "raster",
-        "rosm",
-        "sp"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "GPL-2",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
     },
     "prettyunits": {
       "Package": "prettyunits",
@@ -4368,49 +4066,6 @@
       "Author": "Henrik Bengtsson [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-7579-5165>)",
       "Maintainer": "Henrik Bengtsson <henrikb@braju.com>",
       "Repository": "CRAN"
-    },
-    "promises": {
-      "Package": "promises",
-      "Version": "1.5.0",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 4.1.0)"
-      ],
-      "Imports": [
-        "fastmap (>= 1.1.0)",
-        "later",
-        "lifecycle",
-        "magrittr (>= 1.5)",
-        "otel\n(>= 0.2.0)",
-        "R6",
-        "rlang"
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        "future (>= 1.21.0)",
-        "knitr",
-        "mirai",
-        "otelsdk (>= 0.2.0)",
-        "purrr",
-        "Rcpp",
-        "rmarkdown",
-        "spelling",
-        "testthat (>= 3.0.0)",
-        "vembedr"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
     },
     "proxy": {
       "Package": "proxy",
@@ -5280,34 +4935,6 @@
       "Maintainer": "Tomasz Kalinowski <tomasz@posit.co>",
       "Repository": "CRAN"
     },
-    "rjson": {
-      "Package": "rjson",
-      "Version": "0.2.23",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 4.0.0)"
-      ],
-      "Imports": [
-        {}
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        {}
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "GPL-2",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
     "rlang": {
       "Package": "rlang",
       "Version": "1.2.0",
@@ -5413,48 +5040,6 @@
       "NeedsCompilation": "no",
       "Author": "JJ Allaire [aut], Yihui Xie [aut, cre] (ORCID: <https://orcid.org/0000-0003-0645-5666>), Christophe Dervieux [aut] (ORCID: <https://orcid.org/0000-0003-4474-2498>), Jonathan McPherson [aut], Javier Luraschi [aut], Kevin Ushey [aut], Aron Atkins [aut], Hadley Wickham [aut], Joe Cheng [aut], Winston Chang [aut], Richard Iannone [aut] (ORCID: <https://orcid.org/0000-0003-3925-190X>), Andrew Dunning [ctb] (ORCID: <https://orcid.org/0000-0003-0464-5036>), Atsushi Yasumoto [ctb, cph] (ORCID: <https://orcid.org/0000-0002-8335-495X>, cph: Number sections Lua filter), Barret Schloerke [ctb], Carson Sievert [ctb] (ORCID: <https://orcid.org/0000-0002-4958-2844>), Devon Ryan [ctb] (ORCID: <https://orcid.org/0000-0002-8549-0971>), Frederik Aust [ctb] (ORCID: <https://orcid.org/0000-0003-4900-788X>), Jeff Allen [ctb], JooYoung Seo [ctb] (ORCID: <https://orcid.org/0000-0002-4064-6012>), Malcolm Barrett [ctb], Rob Hyndman [ctb], Romain Lesur [ctb], Roy Storey [ctb], Ruben Arslan [ctb], Sergio Oller [ctb], Posit Software, PBC [cph, fnd], jQuery UI contributors [ctb, cph] (jQuery UI library; authors listed in inst/rmd/h/jqueryui/AUTHORS.txt), Mark Otto [ctb] (Bootstrap library), Jacob Thornton [ctb] (Bootstrap library), Bootstrap contributors [ctb] (Bootstrap library), Twitter, Inc [cph] (Bootstrap library), Alexander Farkas [ctb, cph] (html5shiv library), Scott Jehl [ctb, cph] (Respond.js library), Ivan Sagalaev [ctb, cph] (highlight.js library), Greg Franko [ctb, cph] (tocify library), John MacFarlane [ctb, cph] (Pandoc templates), Google, Inc. [ctb, cph] (ioslides library), Dave Raggett [ctb] (slidy library), W3C [cph] (slidy library), Dave Gandy [ctb, cph] (Font-Awesome), Ben Sperry [ctb] (Ionicons), Drifty [cph] (Ionicons), Aidan Lister [ctb, cph] (jQuery StickyTabs), Benct Philip Jonsson [ctb, cph] (pagebreak Lua filter), Albert Krewinkel [ctb, cph] (pagebreak Lua filter)",
       "Maintainer": "Yihui Xie <xie@yihui.name>",
-      "Repository": "CRAN"
-    },
-    "rosm": {
-      "Package": "rosm",
-      "Version": "0.3.1",
-      "Source": "Repository",
-      "Type": "Package",
-      "Title": "Plot Raster Map Tiles from Open Street Map and Other Sources",
-      "Encoding": "UTF-8",
-      "Authors@R": "c(person(\"Dewey\", \"Dunnington\", role = c(\"aut\", \"cre\"), email = \"dewey@fishandwhistle.net\", comment = c(ORCID = \"0000-0002-9415-4582\")), person(\"Timothée\", \"Giraud\", role = \"ctb\"))",
-      "Maintainer": "Dewey Dunnington <dewey@fishandwhistle.net>",
-      "Description": "Download and plot Open Street Map <https://www.openstreetmap.org/>, Bing Maps <https://www.bing.com/maps> and other tiled map sources. Use to create  basemaps quickly and add hillshade to vector-based maps.",
-      "License": "GPL-2",
-      "Imports": [
-        "curl",
-        "jpeg",
-        "png",
-        "wk",
-        "glue",
-        "progress",
-        "rlang"
-      ],
-      "Suggests": [
-        "sp",
-        "plyr",
-        "raster",
-        "testthat (>= 3.0.0)",
-        "withr",
-        "sf",
-        "terra",
-        "abind",
-        "methods",
-        "jsonlite",
-        "tiff",
-        "vdiffr"
-      ],
-      "URL": "https://github.com/paleolimbot/rosm",
-      "BugReports": "https://github.com/paleolimbot/rosm/issues",
-      "RoxygenNote": "7.3.3",
-      "Config/testthat/edition": "3",
-      "NeedsCompilation": "no",
-      "Author": "Dewey Dunnington [aut, cre] (ORCID: <https://orcid.org/0000-0002-9415-4582>), Timothée Giraud [ctb]",
       "Repository": "CRAN"
     },
     "rpart": {
@@ -7169,74 +6754,6 @@
       "Maintainer": "Davis Vaughan <davis@posit.co>",
       "Repository": "CRAN"
     },
-    "webshot2": {
-      "Package": "webshot2",
-      "Version": "0.1.2",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        "R (>= 3.2)"
-      ],
-      "Imports": [
-        "callr",
-        "chromote (>= 0.1.0)",
-        "later",
-        "magrittr",
-        "promises"
-      ],
-      "LinkingTo": [
-        {}
-      ],
-      "Suggests": [
-        "httpuv",
-        "rmarkdown",
-        "shiny"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "no",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
-    "websocket": {
-      "Package": "websocket",
-      "Version": "1.4.4",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        {}
-      ],
-      "Imports": [
-        "R6",
-        "later (>= 1.2.0)"
-      ],
-      "LinkingTo": [
-        "cpp11",
-        "AsioHeaders",
-        "later"
-      ],
-      "Suggests": [
-        "httpuv",
-        "testthat",
-        "knitr",
-        "rmarkdown"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "GPL-2",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "Type": "source"
-    },
     "withr": {
       "Package": "withr",
       "Version": "3.0.2",
@@ -7582,42 +7099,6 @@
       "Author": "Max Kuhn [aut], Davis Vaughan [aut], Emil Hvitfeldt [aut, cre] (ORCID: <https://orcid.org/0000-0002-0679-1945>), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Emil Hvitfeldt <emil.hvitfeldt@posit.co>",
       "Repository": "CRAN"
-    },
-    "zip": {
-      "Package": "zip",
-      "Version": "3.0.2",
-      "Source": "Repository",
-      "Priority": {},
-      "Depends": [
-        {}
-      ],
-      "Imports": [
-        {}
-      ],
-      "LinkingTo": [
-        "cli"
-      ],
-      "Suggests": [
-        "callr",
-        "cli",
-        "curl",
-        "pillar",
-        "processx",
-        "R6",
-        "testthat",
-        "webfakes",
-        "withr"
-      ],
-      "Enhances": [
-        {}
-      ],
-      "License": "MIT + file LICENSE",
-      "License_is_FOSS": {},
-      "License_restricts_use": {},
-      "OS_type": {},
-      "NeedsCompilation": "yes",
-      "Repository": "CRAN",
-      "Type": "source"
     },
     "renv": {
       "Package": "renv",

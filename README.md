@@ -1,26 +1,26 @@
 # rentership-occupation-analysis
 
 How do occupation and age relate to private renting? Binomial mixed models fitted to 2021 Census data for
-neighbourhoods (MSOAs) in England outside London, written up as the paper
-[Rentership ~ Occupation, Analysis](https://www.alphaxiv.org/abs/2610.rentership-occupation-analysis) on alphaXiv.
+neighbourhoods (MSOAs) in England outside London, written up as the blog post
+[Who Rents?](https://huggingface.co/blog/prteek/rentership-occupation-analysis) on Hugging Face.
 
-**Data:** https://huggingface.co/datasets/prteek/census-2021-occupation-tenure-age-msoa
+**Blog:** https://huggingface.co/blog/prteek/rentership-occupation-analysis · **Data:** https://huggingface.co/datasets/prteek/census-2021-occupation-tenure-age-msoa
 
 ## Layout
 
 ```
-index.qmd               the paper (R, knitr); reads data/lab.duckdb and queries MSOA boundaries from Athena
-_quarto.yml             PDF format; renders to _output/rentership-occupation-analysis.pdf
-_freeze/                frozen results of the paper's code (tracked)
+blog/                   Quarto write-up (R, knitr) -> markdown for the Hugging Face article editor
+  index.qmd             the blog post; renders to rentership-occupation-analysis.md, figures to assets/
+  _hf-markdown.lua      writes inline maths as \\( ... \\) for the article editor
+  thumbnail.png         the article's cover image
 data_preparation.qmd    builds data/lab.duckdb from the Nomis CSVs and geography tables in Athena (not rendered)
 data/
   msoa_tenure_occupation.csv, msoa_occupation_age.csv   Census 2021 tables RM140 and RM102 from Nomis (tracked)
-  lab.duckdb            the database the paper reads (not in git; download it from the dataset, below)
-huggingface/
-  dataset/README.md     the dataset card
-  publish.sh            export the tables and publish the dataset, or only its card
-renv.lock, renv/        R package versions (renv); _dependencies.R lists render-time packages
-references.bib, rentals_2021.png, _wide-tables.lua
+  lab.duckdb            the database the post reads (not in git; download it from the dataset, below)
+  msoa_boundaries.gpkg  MSOA boundaries for the maps (not in git; see Notes)
+dataset/README.md       the dataset card
+publish.sh              export the tables and publish the dataset, or only its card
+renv.lock, renv/        R package versions (renv)
 ```
 
 ## Common tasks
@@ -29,20 +29,30 @@ references.bib, rentals_2021.png, _wide-tables.lua
 Rscript -e 'renv::restore()'                                   # once: install the R packages
 hf download prteek/census-2021-occupation-tenure-age-msoa lab.duckdb --repo-type dataset --local-dir data
 
-QUARTO_R=/opt/homebrew/bin/Rscript quarto render               # paper PDF from the frozen results
-huggingface/publish.sh "message" dataset                       # publish the database and its tables
+QUARTO_R=/opt/homebrew/bin/Rscript quarto render blog/index.qmd   # blog markdown + assets/ figures (~1 min)
+./publish.sh "message" dataset                                 # publish the database and its tables
 ```
 
-Rendering reuses `_freeze/` until a code chunk changes. Re-running the paper needs `data/lab.duckdb` and access to
-the Athena tables holding MSOA boundaries (AWS profile `personal`), plus `RETICULATE_PYTHON` pointing at a Python
-with `boto3` and `CHROMOTE_CHROME` at a headless Chrome for the map screenshots.
+The post re-runs both models from `data/lab.duckdb` on every render (the mixed model fit and the predictions are
+cached by knitr in `blog/index_cache/`). It needs no network access: the maps are drawn from
+`data/msoa_boundaries.gpkg` without a basemap.
 
-The figures were reworked for the PDF (horizontal occupation plots, taller panels, map markers), so the paper was
-re-run here: every number matches the first alphaXiv version, but the randomly chosen example rows in the
-exploratory section differ, because those queries are unseeded.
+## Notes
 
-`dataset_sample` in the database is the exact sample the paper was fitted on (an unseeded draw); don't redraw it
-without refitting the paper.
+- **The write-up is a blog post, not a paper.** It replaced the alphaXiv paper (PDF build, frozen results) on
+  2026-10-27. Re-run, it reproduces the paper's numbers: dispersion 9.33 for the binomial GLM and 2.08 for the mixed
+  model, 3.8% higher odds of renting for 10% more 25–34 year olds, professionals' odds 55% below elementary
+  occupations. The paper's randomly drawn example rows are gone, so every number in the post is reproducible.
+- **MSOA boundaries.** `data/msoa_boundaries.gpkg` holds all 7,264 MSOAs of England and Wales, simplified to 50 m.
+  They were taken from the Athena table `geo.dim_msoa` (via the paper's knitr cache) so the post doesn't need AWS.
+  To rebuild it, query `select msoa, msoa_polygon_wkt from geo.dim_msoa`, convert with `sf::st_as_sfc(crs = 4326)`,
+  simplify with `st_simplify(dTolerance = 50)` in EPSG:27700 and write with `sf::st_write`.
+- **No basemap.** The paper's CARTO tiles now need an API key (they render with a watermark), so the maps show the
+  MSOAs on their own.
+- **The data is England only.** `dataset` and `dataset_sample` hold the eight English regions outside London; there
+  are no Welsh MSOAs.
+- `dataset_sample` in the database is the exact sample the models are fitted on (an unseeded draw); don't redraw it
+  without re-checking the post.
 
 ## Publishing from CI
 

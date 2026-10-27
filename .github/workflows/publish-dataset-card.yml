@@ -1,12 +1,12 @@
 name: Publish dataset card
 
 # Only the card is published from CI: data/lab.duckdb is built locally (data_preparation.qmd, which needs Athena)
-# and not kept in git, so the tables are published by hand with `huggingface/publish.sh "message" dataset`.
+# and not kept in git, so the tables are published by hand with `./publish.sh "message" dataset`.
 on:
   push:
     branches: [main]
     paths:
-      - huggingface/dataset/README.md
+      - dataset/README.md
       - .github/workflows/publish-dataset-card.yml
   workflow_dispatch:
 
@@ -27,4 +27,4 @@ jobs:
           python-version: "3.12"
       - run: pip install huggingface_hub==2.3.0
       - name: Upload the dataset card
-        run: huggingface/publish.sh "Deploy ${GITHUB_SHA::7} from GitHub" dataset-card
+        run: ./publish.sh "Deploy ${GITHUB_SHA::7} from GitHub" dataset-card
