@@ -3,7 +3,7 @@
 # (locally: `hf auth login` as prteek; in CI: HF_TOKEN):
 #   dataset       export every table of data/lab.duckdb to data/<table>.parquet, upload them with lab.duckdb and the card
 #   dataset-card  only the card (CI: data/lab.duckdb is not in git, so the data itself is published by hand)
-#   blog          the post's figures (blog/assets/) to prteek/census-2021-occupation-tenure-age-msoa under blog/assets/,
+#   blog          the post's figures (blog/assets/) to the public bucket prteek/assets/rentership-occupation-analysis/,
 #                 where the post links them
 # Usage: ./publish.sh [message] [dataset|dataset-card|blog]   (default: dataset)
 # Needs the duckdb CLI for `dataset`. Set HF_CLI=hf to use an installed hf CLI instead of `uvx hf`.
@@ -42,7 +42,7 @@ for t in "${targets[@]}"; do
     dataset-card)
       "${hf[@]}" upload "$repo" dataset/README.md README.md --repo-type dataset --commit-message "$msg" ;;
     blog)
-      "${hf[@]}" upload "$repo" blog/assets blog/assets --repo-type dataset --commit-message "$msg" ;;
+      "${hf[@]}" buckets sync blog/assets hf://buckets/prteek/assets/rentership-occupation-analysis ;;
     *)
       echo "unknown target: $t" >&2; exit 1 ;;
   esac

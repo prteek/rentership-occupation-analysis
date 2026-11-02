@@ -1,9 +1,9 @@
 ---
 # The blog post: `QUARTO_R=/opt/homebrew/bin/Rscript quarto render blog/index.qmd` (from the repo root) writes
 # rentership-occupation-analysis.md next to this file, ready to paste into the Hugging Face article editor, with its
-# figures linked from the Hub (assets-url; upload them first with `./publish.sh <message> blog`). Needs data/lab.duckdb
-# and data/msoa_boundaries.gpkg (see the README).
-assets-url: https://huggingface.co/datasets/prteek/census-2021-occupation-tenure-age-msoa/resolve/main/blog
+# figures linked from the Hub bucket (assets-url; upload them first with `./publish.sh <message> blog`). Needs
+# data/lab.duckdb and data/msoa_boundaries.gpkg (see the README).
+assets-url: https://huggingface.co/buckets/prteek/assets/resolve/rentership-occupation-analysis
 format:
   gfm:
     output-file: rentership-occupation-analysis
@@ -28,7 +28,7 @@ suppressPackageStartupMessages({
   library(sf)
 })
 
-# figures are saved next to the post, named by chunk label and linked from the Hub (assets-url)
+# figures are saved next to the post, named by chunk label and linked from the Hub bucket (assets-url)
 knitr::opts_chunk$set(fig.path = "assets/", dpi = 150)
 theme_set(theme_minimal())
 
