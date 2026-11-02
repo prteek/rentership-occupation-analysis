@@ -1,7 +1,7 @@
 name: Publish dataset card
 
 # Only the card is published from CI: data/lab.duckdb is built locally (data_preparation.qmd, which needs Athena)
-# and not kept in git, so the tables are published by hand with `./publish.sh "message" dataset`.
+# and not kept in git, so the tables are published by hand with `hf publish -m "message" dataset`.
 on:
   push:
     branches: [main]
@@ -19,12 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      HF_CLI: hf
+      HF_HUB_DISABLE_UPDATE_CHECK: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install huggingface_hub==2.3.0
+      - name: Install the hf-publish extension
+        run: hf extensions install prteek/hf-publish
       - name: Upload the dataset card
-        run: ./publish.sh "Deploy ${GITHUB_SHA::7} from GitHub" dataset-card
+        run: hf publish -m "Deploy ${GITHUB_SHA::7} from GitHub" dataset-card

@@ -1,7 +1,7 @@
 ---
 # The blog post: `QUARTO_R=/opt/homebrew/bin/Rscript quarto render blog/index.qmd` (from the repo root) writes
 # rentership-occupation-analysis.md next to this file, ready to paste into the Hugging Face article editor, with its
-# figures linked from the Hub bucket (assets-url; upload them first with `./publish.sh <message> blog`). Needs
+# figures linked from the Hub bucket (assets-url; upload them first with `hf publish -m <message> blog`). Needs
 # data/lab.duckdb and data/msoa_boundaries.gpkg (see the README).
 assets-url: https://huggingface.co/buckets/prteek/assets/resolve/rentership-occupation-analysis
 format:

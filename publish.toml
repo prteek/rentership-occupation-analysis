@@ -1,0 +1,19 @@
+# Publish to Hugging Face with `hf publish -m "message" [target ...]` (the hf-publish extension:
+# `hf extensions install prteek/hf-publish`; locally `hf auth login` as prteek, in CI HF_TOKEN).
+# `dataset-card` uploads only the card (what CI publishes: data/lab.duckdb is not in git, so the data is published
+# by hand).
+default = ["dataset"]
+
+# prteek/census-2021-occupation-tenure-age-msoa: every table of data/lab.duckdb as data/<table>.parquet (needs the
+# duckdb CLI), with lab.duckdb and the card
+[targets.dataset]
+repo = "prteek/census-2021-occupation-tenure-age-msoa"
+type = "dataset"
+build = "bash dataset/export.sh"
+files = { "." = ["data/lab.duckdb", "dataset/README.md"] }
+
+# the post's figures, in the public bucket where the post links them
+[targets.blog]
+type = "bucket"
+bucket = "prteek/assets/rentership-occupation-analysis"
+dir = "blog/assets"

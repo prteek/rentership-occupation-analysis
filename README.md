@@ -19,7 +19,7 @@ data/
   lab.duckdb            the database the post reads (not in git; download it from the dataset, below)
   msoa_boundaries.gpkg  MSOA boundaries for the maps (not in git; see Notes)
 dataset/README.md       the dataset card
-publish.sh              export the tables and publish the dataset, or only its card
+publish.toml            what `hf publish` uploads: the tables (dataset/export.sh) and the dataset, or only its card
 renv.lock, renv/        R package versions (renv)
 ```
 
@@ -30,7 +30,7 @@ Rscript -e 'renv::restore()'                                   # once: install t
 hf download prteek/census-2021-occupation-tenure-age-msoa lab.duckdb --repo-type dataset --local-dir data
 
 QUARTO_R=/opt/homebrew/bin/Rscript quarto render blog/index.qmd   # blog markdown + assets/ figures (~1 min)
-./publish.sh "message" dataset                                 # publish the database and its tables
+hf publish -m "message" dataset                                # publish the database and its tables
 ```
 
 The post re-runs both models from `data/lab.duckdb` on every render (the mixed model fit and the predictions are
